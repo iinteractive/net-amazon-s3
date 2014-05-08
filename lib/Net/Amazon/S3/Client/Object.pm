@@ -16,7 +16,7 @@ enum 'AclShort' =>
     [ qw(private public-read public-read-write authenticated-read) ];
 
 enum 'StorageClass' =>
-    qw(standard reduced_redundancy);
+    [ qw(standard reduced_redundancy) ];
 
 has 'client' =>
     ( is => 'ro', isa => 'Net::Amazon::S3::Client', required => 1 );
