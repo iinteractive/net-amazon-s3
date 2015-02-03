@@ -1,4 +1,5 @@
 package Net::Amazon::S3::Client::Object;
+$Net::Amazon::S3::Client::Object::VERSION = '0.59';
 use Moose 0.85;
 use MooseX::StrictConstructor 0.16;
 use DateTime::Format::HTTP;
@@ -361,8 +362,17 @@ sub _is_multipart_etag {
 
 __END__
 
-=for test_synopsis
-no strict 'vars'
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+Net::Amazon::S3::Client::Object - An easy-to-use Amazon S3 client object
+
+=head1 VERSION
+
+version 0.59
 
 =head1 SYNOPSIS
 
@@ -433,6 +443,8 @@ no strict 'vars'
 =head1 DESCRIPTION
 
 This module represents objects in buckets.
+
+=for test_synopsis no strict 'vars'
 
 =head1 METHODS
 
@@ -587,3 +599,16 @@ To upload an object with user metadata, set C<user_metadata> at construction
 time to a hashref, with no C<x-amz-meta-> prefixes on the key names.  When
 downloading an object, the C<get>, C<get_decoded> and C<get_filename>
 methods set the contents of C<user_metadata> to the same format.
+
+=head1 AUTHOR
+
+Pedro Figueiredo <me@pedrofigueiredo.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2015 by Amazon Digital Services, Leon Brocard, Brad Fitzpatrick, Pedro Figueiredo.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut

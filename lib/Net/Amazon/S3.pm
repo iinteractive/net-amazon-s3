@@ -1,107 +1,10 @@
 package Net::Amazon::S3;
+$Net::Amazon::S3::VERSION = '0.59';
 use Moose 0.85;
 use MooseX::StrictConstructor 0.16;
 
 # ABSTRACT: Use the Amazon S3 - Simple Storage Service
 
-=head1 SYNOPSIS
-
-  use Net::Amazon::S3;
-  my $aws_access_key_id     = 'fill me in';
-  my $aws_secret_access_key = 'fill me in too';
-
-  my $s3 = Net::Amazon::S3->new(
-      {   aws_access_key_id     => $aws_access_key_id,
-          aws_secret_access_key => $aws_secret_access_key,
-          retry                 => 1,
-      }
-  );
-
-  # a bucket is a globally-unique directory
-  # list all buckets that i own
-  my $response = $s3->buckets;
-  foreach my $bucket ( @{ $response->{buckets} } ) {
-      print "You have a bucket: " . $bucket->bucket . "\n";
-  }
-
-  # create a new bucket
-  my $bucketname = 'acmes_photo_backups';
-  my $bucket = $s3->add_bucket( { bucket => $bucketname } )
-      or die $s3->err . ": " . $s3->errstr;
-
-  # or use an existing bucket
-  $bucket = $s3->bucket($bucketname);
-
-  # store a file in the bucket
-  $bucket->add_key_filename( '1.JPG', 'DSC06256.JPG',
-      { content_type => 'image/jpeg', },
-  ) or die $s3->err . ": " . $s3->errstr;
-
-  # store a value in the bucket
-  $bucket->add_key( 'reminder.txt', 'this is where my photos are backed up' )
-      or die $s3->err . ": " . $s3->errstr;
-
-  # list files in the bucket
-  $response = $bucket->list_all
-      or die $s3->err . ": " . $s3->errstr;
-  foreach my $key ( @{ $response->{keys} } ) {
-      my $key_name = $key->{key};
-      my $key_size = $key->{size};
-      print "Bucket contains key '$key_name' of size $key_size\n";
-  }
-
-  # fetch file from the bucket
-  $response = $bucket->get_key_filename( '1.JPG', 'GET', 'backup.jpg' )
-      or die $s3->err . ": " . $s3->errstr;
-
-  # fetch value from the bucket
-  $response = $bucket->get_key('reminder.txt')
-      or die $s3->err . ": " . $s3->errstr;
-  print "reminder.txt:\n";
-  print "  content length: " . $response->{content_length} . "\n";
-  print "    content type: " . $response->{content_type} . "\n";
-  print "            etag: " . $response->{content_type} . "\n";
-  print "         content: " . $response->{value} . "\n";
-
-  # delete keys
-  $bucket->delete_key('reminder.txt') or die $s3->err . ": " . $s3->errstr;
-  $bucket->delete_key('1.JPG')        or die $s3->err . ": " . $s3->errstr;
-
-  # and finally delete the bucket
-  $bucket->delete_bucket or die $s3->err . ": " . $s3->errstr;
-
-=head1 DESCRIPTION
-
-This module provides a Perlish interface to Amazon S3. From the
-developer blurb: "Amazon S3 is storage for the Internet. It is
-designed to make web-scale computing easier for developers. Amazon S3
-provides a simple web services interface that can be used to store and
-retrieve any amount of data, at any time, from anywhere on the web. It
-gives any developer access to the same highly scalable, reliable,
-fast, inexpensive data storage infrastructure that Amazon uses to run
-its own global network of web sites. The service aims to maximize
-benefits of scale and to pass those benefits on to developers".
-
-To find out more about S3, please visit: http://s3.amazonaws.com/
-
-To use this module you will need to sign up to Amazon Web Services and
-provide an "Access Key ID" and " Secret Access Key". If you use this
-module, you will incurr costs as specified by Amazon. Please check the
-costs. If you use this module with your Access Key ID and Secret
-Access Key you must be responsible for these costs.
-
-I highly recommend reading all about S3, but in a nutshell data is
-stored in values. Values are referenced by keys, and keys are stored
-in buckets. Bucket names are global.
-
-Note: This is the legacy interface, please check out
-L<Net::Amazon::S3::Client> instead.
-
-Development of this code happens here: http://github.com/pfig/net-amazon-s3/
-
-Homepage for the project (just started) is at http://pfig.github.com/net-amazon-s3/
-
-=cut
 
 use Carp;
 use Digest::HMAC_SHA1;
@@ -150,56 +53,6 @@ __PACKAGE__->meta->make_immutable;
 
 my $KEEP_ALIVE_CACHESIZE = 10;
 
-=head1 METHODS
-
-=head2 new
-
-Create a new S3 client object. Takes some arguments:
-
-=over
-
-=item aws_access_key_id
-
-Use your Access Key ID as the value of the AWSAccessKeyId parameter
-in requests you send to Amazon Web Services (when required). Your
-Access Key ID identifies you as the party responsible for the
-request.
-
-=item aws_secret_access_key
-
-Since your Access Key ID is not encrypted in requests to AWS, it
-could be discovered and used by anyone. Services that are not free
-require you to provide additional information, a request signature,
-to verify that a request containing your unique Access Key ID could
-only have come from you.
-
-DO NOT INCLUDE THIS IN SCRIPTS OR APPLICATIONS YOU DISTRIBUTE. YOU'LL BE SORRY
-
-=item aws_session_token
-
-If you are using temporary credentials provided by the AWS Security Token
-Service, set the token here, and it will be added to the request in order to
-authenticate it.
-
-=item secure
-
-Set this to C<1> if you want to use SSL-encrypted connections when talking
-to S3. Defaults to C<0>.
-
-=item timeout
-
-How many seconds should your script wait before bailing on a request to S3? Defaults
-to 30.
-
-=item retry
-
-If this library should retry upon errors. This option is recommended.
-This uses exponential backoff with retries after 1, 2, 4, 8, 16, 32 seconds,
-as recommended by Amazon. Defaults to off.
-
-=back
-
-=cut
 
 sub BUILD {
     my $self = shift;
@@ -225,11 +78,6 @@ sub BUILD {
     $self->libxml( XML::LibXML->new );
 }
 
-=head2 buckets
-
-Returns undef on error, else hashref of results
-
-=cut
 
 sub buckets {
     my $self = shift;
@@ -266,31 +114,6 @@ sub buckets {
     };
 }
 
-=head2 add_bucket
-
-Takes a hashref:
-
-=over
-
-=item bucket
-
-The name of the bucket you want to add
-
-=item acl_short (optional)
-
-See the set_acl subroutine for documenation on the acl_short options
-
-=item location_constraint (option)
-
-Sets the location constraint of the new bucket. If left unspecified, the
-default S3 datacenter location will be used. Otherwise, you can set it
-to 'EU' for a European data center - note that costs are different.
-
-=back
-
-Returns 0 on failure, Net::Amazon::S3::Bucket object on success
-
-=cut
 
 sub add_bucket {
     my ( $self, $conf ) = @_;
@@ -308,13 +131,6 @@ sub add_bucket {
     return $self->bucket( $conf->{bucket} );
 }
 
-=head2 bucket BUCKET
-
-Takes a scalar argument, the name of the bucket you're creating
-
-Returns an (unverified) bucket object from an account. Does no network access.
-
-=cut
 
 sub bucket {
     my ( $self, $bucketname ) = @_;
@@ -322,23 +138,6 @@ sub bucket {
         { bucket => $bucketname, account => $self } );
 }
 
-=head2 delete_bucket
-
-Takes either a L<Net::Amazon::S3::Bucket> object or a hashref containing
-
-=over
-
-=item bucket
-
-The name of the bucket to remove
-
-=back
-
-Returns false (and fails) if the bucket isn't empty.
-
-Returns true if the bucket is successfully deleted.
-
-=cut
 
 sub delete_bucket {
     my ( $self, $conf ) = @_;
@@ -358,141 +157,6 @@ sub delete_bucket {
     return $self->_send_request_expect_nothing($http_request);
 }
 
-=head2 list_bucket
-
-List all keys in this bucket.
-
-Takes a hashref of arguments:
-
-MANDATORY
-
-=over
-
-=item bucket
-
-The name of the bucket you want to list keys on
-
-=back
-
-OPTIONAL
-
-=over
-
-=item prefix
-
-Restricts the response to only contain results that begin with the
-specified prefix. If you omit this optional argument, the value of
-prefix for your query will be the empty string. In other words, the
-results will be not be restricted by prefix.
-
-=item delimiter
-
-If this optional, Unicode string parameter is included with your
-request, then keys that contain the same string between the prefix
-and the first occurrence of the delimiter will be rolled up into a
-single result element in the CommonPrefixes collection. These
-rolled-up keys are not returned elsewhere in the response.  For
-example, with prefix="USA/" and delimiter="/", the matching keys
-"USA/Oregon/Salem" and "USA/Oregon/Portland" would be summarized
-in the response as a single "USA/Oregon" element in the CommonPrefixes
-collection. If an otherwise matching key does not contain the
-delimiter after the prefix, it appears in the Contents collection.
-
-Each element in the CommonPrefixes collection counts as one against
-the MaxKeys limit. The rolled-up keys represented by each CommonPrefixes
-element do not.  If the Delimiter parameter is not present in your
-request, keys in the result set will not be rolled-up and neither
-the CommonPrefixes collection nor the NextMarker element will be
-present in the response.
-
-=item max-keys
-
-This optional argument limits the number of results returned in
-response to your query. Amazon S3 will return no more than this
-number of results, but possibly less. Even if max-keys is not
-specified, Amazon S3 will limit the number of results in the response.
-Check the IsTruncated flag to see if your results are incomplete.
-If so, use the Marker parameter to request the next page of results.
-For the purpose of counting max-keys, a 'result' is either a key
-in the 'Contents' collection, or a delimited prefix in the
-'CommonPrefixes' collection. So for delimiter requests, max-keys
-limits the total number of list results, not just the number of
-keys.
-
-=item marker
-
-This optional parameter enables pagination of large result sets.
-C<marker> specifies where in the result set to resume listing. It
-restricts the response to only contain results that occur alphabetically
-after the value of marker. To retrieve the next page of results,
-use the last key from the current page of results as the marker in
-your next request.
-
-See also C<next_marker>, below.
-
-If C<marker> is omitted,the first page of results is returned.
-
-=back
-
-
-Returns undef on error and a hashref of data on success:
-
-The hashref looks like this:
-
-  {
-        bucket          => $bucket_name,
-        prefix          => $bucket_prefix,
-        common_prefixes => [$prefix1,$prefix2,...]
-        marker          => $bucket_marker,
-        next_marker     => $bucket_next_available_marker,
-        max_keys        => $bucket_max_keys,
-        is_truncated    => $bucket_is_truncated_boolean
-        keys            => [$key1,$key2,...]
-   }
-
-Explanation of bits of that:
-
-=over
-
-=item common_prefixes
-
-If list_bucket was requested with a delimiter, common_prefixes will
-contain a list of prefixes matching that delimiter.  Drill down into
-these prefixes by making another request with the prefix parameter.
-
-=item is_truncated
-
-B flag that indicates whether or not all results of your query were
-returned in this response. If your results were truncated, you can
-make a follow-up paginated request using the Marker parameter to
-retrieve the rest of the results.
-
-
-=item next_marker
-
-A convenience element, useful when paginating with delimiters. The
-value of C<next_marker>, if present, is the largest (alphabetically)
-of all key names and all CommonPrefixes prefixes in the response.
-If the C<is_truncated> flag is set, request the next page of results
-by setting C<marker> to the value of C<next_marker>. This element
-is only present in the response if the C<delimiter> parameter was
-sent with the request.
-
-=back
-
-Each key is a hashref that looks like this:
-
-     {
-        key           => $key,
-        last_modified => $last_mod_date,
-        etag          => $etag, # An MD5 sum of the stored content.
-        size          => $size, # Bytes
-        storage_class => $storage_class # Doc?
-        owner_id      => $owner_id,
-        owner_displayname => $owner_name
-    }
-
-=cut
 
 sub list_bucket {
     my ( $self, $conf ) = @_;
@@ -562,15 +226,6 @@ sub list_bucket {
     return $return;
 }
 
-=head2 list_bucket_all
-
-List all keys in this bucket without having to worry about
-'marker'. This is a convenience method, but may make multiple requests
-to S3 under the hood.
-
-Takes the same arguments as list_bucket.
-
-=cut
 
 sub list_bucket_all {
     my ( $self, $conf ) = @_;
@@ -603,11 +258,6 @@ sub _compat_bucket {
         { account => $self, bucket => delete $conf->{bucket} } );
 }
 
-=head2 add_key
-
-DEPRECATED. DO NOT USE
-
-=cut
 
 # compat wrapper; deprecated as of 2005-03-23
 sub add_key {
@@ -618,11 +268,6 @@ sub add_key {
     return $bucket->add_key( $key, $value, $conf );
 }
 
-=head2 get_key
-
-DEPRECATED. DO NOT USE
-
-=cut
 
 # compat wrapper; deprecated as of 2005-03-23
 sub get_key {
@@ -631,11 +276,6 @@ sub get_key {
     return $bucket->get_key( $conf->{key} );
 }
 
-=head2 head_key
-
-DEPRECATED. DO NOT USE
-
-=cut
 
 # compat wrapper; deprecated as of 2005-03-23
 sub head_key {
@@ -644,11 +284,6 @@ sub head_key {
     return $bucket->head_key( $conf->{key} );
 }
 
-=head2 delete_key
-
-DEPRECATED. DO NOT USE
-
-=cut
 
 # compat wrapper; deprecated as of 2005-03-23
 sub delete_key {
@@ -801,6 +436,370 @@ sub _urlencode {
 
 __END__
 
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+Net::Amazon::S3 - Use the Amazon S3 - Simple Storage Service
+
+=head1 VERSION
+
+version 0.59
+
+=head1 SYNOPSIS
+
+  use Net::Amazon::S3;
+  my $aws_access_key_id     = 'fill me in';
+  my $aws_secret_access_key = 'fill me in too';
+
+  my $s3 = Net::Amazon::S3->new(
+      {   aws_access_key_id     => $aws_access_key_id,
+          aws_secret_access_key => $aws_secret_access_key,
+          retry                 => 1,
+      }
+  );
+
+  # a bucket is a globally-unique directory
+  # list all buckets that i own
+  my $response = $s3->buckets;
+  foreach my $bucket ( @{ $response->{buckets} } ) {
+      print "You have a bucket: " . $bucket->bucket . "\n";
+  }
+
+  # create a new bucket
+  my $bucketname = 'acmes_photo_backups';
+  my $bucket = $s3->add_bucket( { bucket => $bucketname } )
+      or die $s3->err . ": " . $s3->errstr;
+
+  # or use an existing bucket
+  $bucket = $s3->bucket($bucketname);
+
+  # store a file in the bucket
+  $bucket->add_key_filename( '1.JPG', 'DSC06256.JPG',
+      { content_type => 'image/jpeg', },
+  ) or die $s3->err . ": " . $s3->errstr;
+
+  # store a value in the bucket
+  $bucket->add_key( 'reminder.txt', 'this is where my photos are backed up' )
+      or die $s3->err . ": " . $s3->errstr;
+
+  # list files in the bucket
+  $response = $bucket->list_all
+      or die $s3->err . ": " . $s3->errstr;
+  foreach my $key ( @{ $response->{keys} } ) {
+      my $key_name = $key->{key};
+      my $key_size = $key->{size};
+      print "Bucket contains key '$key_name' of size $key_size\n";
+  }
+
+  # fetch file from the bucket
+  $response = $bucket->get_key_filename( '1.JPG', 'GET', 'backup.jpg' )
+      or die $s3->err . ": " . $s3->errstr;
+
+  # fetch value from the bucket
+  $response = $bucket->get_key('reminder.txt')
+      or die $s3->err . ": " . $s3->errstr;
+  print "reminder.txt:\n";
+  print "  content length: " . $response->{content_length} . "\n";
+  print "    content type: " . $response->{content_type} . "\n";
+  print "            etag: " . $response->{content_type} . "\n";
+  print "         content: " . $response->{value} . "\n";
+
+  # delete keys
+  $bucket->delete_key('reminder.txt') or die $s3->err . ": " . $s3->errstr;
+  $bucket->delete_key('1.JPG')        or die $s3->err . ": " . $s3->errstr;
+
+  # and finally delete the bucket
+  $bucket->delete_bucket or die $s3->err . ": " . $s3->errstr;
+
+=head1 DESCRIPTION
+
+This module provides a Perlish interface to Amazon S3. From the
+developer blurb: "Amazon S3 is storage for the Internet. It is
+designed to make web-scale computing easier for developers. Amazon S3
+provides a simple web services interface that can be used to store and
+retrieve any amount of data, at any time, from anywhere on the web. It
+gives any developer access to the same highly scalable, reliable,
+fast, inexpensive data storage infrastructure that Amazon uses to run
+its own global network of web sites. The service aims to maximize
+benefits of scale and to pass those benefits on to developers".
+
+To find out more about S3, please visit: http://s3.amazonaws.com/
+
+To use this module you will need to sign up to Amazon Web Services and
+provide an "Access Key ID" and " Secret Access Key". If you use this
+module, you will incurr costs as specified by Amazon. Please check the
+costs. If you use this module with your Access Key ID and Secret
+Access Key you must be responsible for these costs.
+
+I highly recommend reading all about S3, but in a nutshell data is
+stored in values. Values are referenced by keys, and keys are stored
+in buckets. Bucket names are global.
+
+Note: This is the legacy interface, please check out
+L<Net::Amazon::S3::Client> instead.
+
+Development of this code happens here: http://github.com/pfig/net-amazon-s3/
+
+Homepage for the project (just started) is at http://pfig.github.com/net-amazon-s3/
+
+=head1 METHODS
+
+=head2 new
+
+Create a new S3 client object. Takes some arguments:
+
+=over
+
+=item aws_access_key_id
+
+Use your Access Key ID as the value of the AWSAccessKeyId parameter
+in requests you send to Amazon Web Services (when required). Your
+Access Key ID identifies you as the party responsible for the
+request.
+
+=item aws_secret_access_key
+
+Since your Access Key ID is not encrypted in requests to AWS, it
+could be discovered and used by anyone. Services that are not free
+require you to provide additional information, a request signature,
+to verify that a request containing your unique Access Key ID could
+only have come from you.
+
+DO NOT INCLUDE THIS IN SCRIPTS OR APPLICATIONS YOU DISTRIBUTE. YOU'LL BE SORRY
+
+=item aws_session_token
+
+If you are using temporary credentials provided by the AWS Security Token
+Service, set the token here, and it will be added to the request in order to
+authenticate it.
+
+=item secure
+
+Set this to C<1> if you want to use SSL-encrypted connections when talking
+to S3. Defaults to C<0>.
+
+=item timeout
+
+How many seconds should your script wait before bailing on a request to S3? Defaults
+to 30.
+
+=item retry
+
+If this library should retry upon errors. This option is recommended.
+This uses exponential backoff with retries after 1, 2, 4, 8, 16, 32 seconds,
+as recommended by Amazon. Defaults to off.
+
+=back
+
+=head2 buckets
+
+Returns undef on error, else hashref of results
+
+=head2 add_bucket
+
+Takes a hashref:
+
+=over
+
+=item bucket
+
+The name of the bucket you want to add
+
+=item acl_short (optional)
+
+See the set_acl subroutine for documenation on the acl_short options
+
+=item location_constraint (option)
+
+Sets the location constraint of the new bucket. If left unspecified, the
+default S3 datacenter location will be used. Otherwise, you can set it
+to 'EU' for a European data center - note that costs are different.
+
+=back
+
+Returns 0 on failure, Net::Amazon::S3::Bucket object on success
+
+=head2 bucket BUCKET
+
+Takes a scalar argument, the name of the bucket you're creating
+
+Returns an (unverified) bucket object from an account. Does no network access.
+
+=head2 delete_bucket
+
+Takes either a L<Net::Amazon::S3::Bucket> object or a hashref containing
+
+=over
+
+=item bucket
+
+The name of the bucket to remove
+
+=back
+
+Returns false (and fails) if the bucket isn't empty.
+
+Returns true if the bucket is successfully deleted.
+
+=head2 list_bucket
+
+List all keys in this bucket.
+
+Takes a hashref of arguments:
+
+MANDATORY
+
+=over
+
+=item bucket
+
+The name of the bucket you want to list keys on
+
+=back
+
+OPTIONAL
+
+=over
+
+=item prefix
+
+Restricts the response to only contain results that begin with the
+specified prefix. If you omit this optional argument, the value of
+prefix for your query will be the empty string. In other words, the
+results will be not be restricted by prefix.
+
+=item delimiter
+
+If this optional, Unicode string parameter is included with your
+request, then keys that contain the same string between the prefix
+and the first occurrence of the delimiter will be rolled up into a
+single result element in the CommonPrefixes collection. These
+rolled-up keys are not returned elsewhere in the response.  For
+example, with prefix="USA/" and delimiter="/", the matching keys
+"USA/Oregon/Salem" and "USA/Oregon/Portland" would be summarized
+in the response as a single "USA/Oregon" element in the CommonPrefixes
+collection. If an otherwise matching key does not contain the
+delimiter after the prefix, it appears in the Contents collection.
+
+Each element in the CommonPrefixes collection counts as one against
+the MaxKeys limit. The rolled-up keys represented by each CommonPrefixes
+element do not.  If the Delimiter parameter is not present in your
+request, keys in the result set will not be rolled-up and neither
+the CommonPrefixes collection nor the NextMarker element will be
+present in the response.
+
+=item max-keys
+
+This optional argument limits the number of results returned in
+response to your query. Amazon S3 will return no more than this
+number of results, but possibly less. Even if max-keys is not
+specified, Amazon S3 will limit the number of results in the response.
+Check the IsTruncated flag to see if your results are incomplete.
+If so, use the Marker parameter to request the next page of results.
+For the purpose of counting max-keys, a 'result' is either a key
+in the 'Contents' collection, or a delimited prefix in the
+'CommonPrefixes' collection. So for delimiter requests, max-keys
+limits the total number of list results, not just the number of
+keys.
+
+=item marker
+
+This optional parameter enables pagination of large result sets.
+C<marker> specifies where in the result set to resume listing. It
+restricts the response to only contain results that occur alphabetically
+after the value of marker. To retrieve the next page of results,
+use the last key from the current page of results as the marker in
+your next request.
+
+See also C<next_marker>, below.
+
+If C<marker> is omitted,the first page of results is returned.
+
+=back
+
+Returns undef on error and a hashref of data on success:
+
+The hashref looks like this:
+
+  {
+        bucket          => $bucket_name,
+        prefix          => $bucket_prefix,
+        common_prefixes => [$prefix1,$prefix2,...]
+        marker          => $bucket_marker,
+        next_marker     => $bucket_next_available_marker,
+        max_keys        => $bucket_max_keys,
+        is_truncated    => $bucket_is_truncated_boolean
+        keys            => [$key1,$key2,...]
+   }
+
+Explanation of bits of that:
+
+=over
+
+=item common_prefixes
+
+If list_bucket was requested with a delimiter, common_prefixes will
+contain a list of prefixes matching that delimiter.  Drill down into
+these prefixes by making another request with the prefix parameter.
+
+=item is_truncated
+
+B flag that indicates whether or not all results of your query were
+returned in this response. If your results were truncated, you can
+make a follow-up paginated request using the Marker parameter to
+retrieve the rest of the results.
+
+=item next_marker
+
+A convenience element, useful when paginating with delimiters. The
+value of C<next_marker>, if present, is the largest (alphabetically)
+of all key names and all CommonPrefixes prefixes in the response.
+If the C<is_truncated> flag is set, request the next page of results
+by setting C<marker> to the value of C<next_marker>. This element
+is only present in the response if the C<delimiter> parameter was
+sent with the request.
+
+=back
+
+Each key is a hashref that looks like this:
+
+     {
+        key           => $key,
+        last_modified => $last_mod_date,
+        etag          => $etag, # An MD5 sum of the stored content.
+        size          => $size, # Bytes
+        storage_class => $storage_class # Doc?
+        owner_id      => $owner_id,
+        owner_displayname => $owner_name
+    }
+
+=head2 list_bucket_all
+
+List all keys in this bucket without having to worry about
+'marker'. This is a convenience method, but may make multiple requests
+to S3 under the hood.
+
+Takes the same arguments as list_bucket.
+
+=head2 add_key
+
+DEPRECATED. DO NOT USE
+
+=head2 get_key
+
+DEPRECATED. DO NOT USE
+
+=head2 head_key
+
+DEPRECATED. DO NOT USE
+
+=head2 delete_key
+
+DEPRECATED. DO NOT USE
+
 =head1 LICENSE
 
 This module contains code modified from Amazon that contains the
@@ -851,3 +850,15 @@ Pedro Figueiredo <me@pedrofigueiredo.org> - since 0.54
 
 L<Net::Amazon::S3::Bucket>
 
+=head1 AUTHOR
+
+Pedro Figueiredo <me@pedrofigueiredo.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2015 by Amazon Digital Services, Leon Brocard, Brad Fitzpatrick, Pedro Figueiredo.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut

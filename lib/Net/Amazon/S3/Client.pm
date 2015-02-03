@@ -1,4 +1,5 @@
 package Net::Amazon::S3::Client;
+$Net::Amazon::S3::Client::VERSION = '0.59';
 use Moose 0.85;
 use HTTP::Status qw(is_error status_message);
 use MooseX::StrictConstructor 0.16;
@@ -127,8 +128,17 @@ sub _send_request_xpc {
 
 __END__
 
-=for test_synopsis
-no strict 'vars'
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+Net::Amazon::S3::Client - An easy-to-use Amazon S3 client
+
+=head1 VERSION
+
+version 0.59
 
 =head1 SYNOPSIS
 
@@ -174,6 +184,8 @@ to S3 and check the resultant ETag.
 WARNING: This is an early release of the Client classes, the APIs
 may change.
 
+=for test_synopsis no strict 'vars'
+
 =head1 METHODS
 
 =head2 buckets
@@ -201,3 +213,15 @@ may change.
   # returns a L<Net::Amazon::S3::Client::Bucket> object
   my $bucket = $client->bucket( name => $bucket_name );
 
+=head1 AUTHOR
+
+Pedro Figueiredo <me@pedrofigueiredo.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2015 by Amazon Digital Services, Leon Brocard, Brad Fitzpatrick, Pedro Figueiredo.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut

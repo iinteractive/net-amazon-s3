@@ -1,4 +1,5 @@
 package Net::Amazon::S3::Request::ListAllMyBuckets;
+$Net::Amazon::S3::Request::ListAllMyBuckets::VERSION = '0.59';
 use Moose 0.85;
 use MooseX::StrictConstructor 0.16;
 extends 'Net::Amazon::S3::Request';
@@ -20,8 +21,17 @@ sub http_request {
 
 __END__
 
-=for test_synopsis
-no strict 'vars'
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+Net::Amazon::S3::Request::ListAllMyBuckets - An internal class to list all buckets
+
+=head1 VERSION
+
+version 0.59
 
 =head1 SYNOPSIS
 
@@ -33,9 +43,23 @@ no strict 'vars'
 
 This module lists all buckets.
 
+=for test_synopsis no strict 'vars'
+
 =head1 METHODS
 
 =head2 http_request
 
 This method returns a HTTP::Request object.
 
+=head1 AUTHOR
+
+Pedro Figueiredo <me@pedrofigueiredo.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2015 by Amazon Digital Services, Leon Brocard, Brad Fitzpatrick, Pedro Figueiredo.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut

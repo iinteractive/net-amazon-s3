@@ -13,40 +13,6 @@ use Term::ProgressBar::Simple;
 # PODNAME: s3cl
 # ABSTRACT: Command line for Amazon s3 cloud storage
 
-=head1 SYNOPSIS
-
-s3cl command [options]
-
-  s3cl buckets
-  s3cl mkbucket --bucket some_bucket_name --jurisdiction [EU|US]
-  s3cl ls <bucket>:[prefix]
-  s3cl cp <bucket>:<key> /path/[filename]
-  s3cl sync <bucket>:[prefix] /path/
-  s3cl sync_up [--acl_short=public-read] /path/ <bucket>:[prefix]
-  s3cl rm <bucket>:<key>
-
- Options:
-   -help            brief help message
-   -man             full documentation
-
- We take NO responsibility for the costs incured through using
- this script.
-
- To run this script, you need to set a pair of environment variables:
-
- AWS_ACCESS_KEY_ID
- AWS_ACCESS_KEY_SECRET
-
-=head1 DESCRIPTION
-
-This program gives a command line interface to Amazons s3 storage
-service. It does not limit the number of requests (which may cost
-you more money than if you did it a different way!) and each
-request costs Money (although some costs from EC2 may be $0.0,
-check latest from Amazon costs page) - we take NO reponsibility
-for your bill.
-
-=cut
 
 my $s3;
 
@@ -334,6 +300,64 @@ sub helper {
 
     exit;
 }
+
+=pod
+
+=encoding UTF-8
+
+=head1 NAME
+
+s3cl - Command line for Amazon s3 cloud storage
+
+=head1 VERSION
+
+version 0.59
+
+=head1 SYNOPSIS
+
+s3cl command [options]
+
+  s3cl buckets
+  s3cl mkbucket --bucket some_bucket_name --jurisdiction [EU|US]
+  s3cl ls <bucket>:[prefix]
+  s3cl cp <bucket>:<key> /path/[filename]
+  s3cl sync <bucket>:[prefix] /path/
+  s3cl sync_up [--acl_short=public-read] /path/ <bucket>:[prefix]
+  s3cl rm <bucket>:<key>
+
+ Options:
+   -help            brief help message
+   -man             full documentation
+
+ We take NO responsibility for the costs incured through using
+ this script.
+
+ To run this script, you need to set a pair of environment variables:
+
+ AWS_ACCESS_KEY_ID
+ AWS_ACCESS_KEY_SECRET
+
+=head1 DESCRIPTION
+
+This program gives a command line interface to Amazons s3 storage
+service. It does not limit the number of requests (which may cost
+you more money than if you did it a different way!) and each
+request costs Money (although some costs from EC2 may be $0.0,
+check latest from Amazon costs page) - we take NO reponsibility
+for your bill.
+
+=head1 AUTHOR
+
+Pedro Figueiredo <me@pedrofigueiredo.org>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2015 by Amazon Digital Services, Leon Brocard, Brad Fitzpatrick, Pedro Figueiredo.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+
+=cut
 
 __DATA__
 
